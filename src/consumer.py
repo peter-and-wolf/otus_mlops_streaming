@@ -72,7 +72,7 @@ def main(model_path: Annotated[Path, typer.Option()] = Path('data/MNISTClassifie
         topic=cfg.kafka_output_topic,
         value={
           'pred': pred,
-          'gt': gt  
+          'gt': gt
         }
       )
       producer.flush()
