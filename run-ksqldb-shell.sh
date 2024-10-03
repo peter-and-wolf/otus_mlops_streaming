@@ -1,0 +1,1 @@
+docker exec -it otus-ksqldb-cli ksql http://otus-ksqldb-server:8088

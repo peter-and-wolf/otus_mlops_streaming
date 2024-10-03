@@ -19,7 +19,32 @@ services:
       KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /truststore/truststore.jks
       KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: ${KAFKA_UI_STOREPASS}
 
-    
+  otus-ksqldb-server:
+    build:
+      context: ./ksqldb
+      args:
+        STOREPASS: ${KSQLDB_STOREPASS}
+    image: otus-ksqkdb-server
+    container_name: otus-ksqldb-server
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_OPTS: "-Dconfluent.support.metrics.enable=false"
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: ${KAFKA_CLUSTERS_BOOTSTRAPSERVERS}
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+      KSQL_SECURITY_PROTOCOL: SASL_SSL
+      KSQL_SASL_MECHANISM: PLAIN
+      KSQL_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="${KAFKA_USER_LOGIN}" password="${KAFKA_USER_PASSWORD}";'
+      KSQL_SSL_TRUSTSTORE_LOCATION: /truststore/truststore.jks
+      KSQL_SSL_TRUSTSTORE_PASSWORD: ${KSQLDB_STOREPASS}
+
+  otus-ksqldb-cli:
+    image: confluentinc/cp-ksqldb-cli:7.7.1
+    container_name: otus-ksqldb-cli
+    entrypoint: /bin/sh
+    tty: true
 
 
         
