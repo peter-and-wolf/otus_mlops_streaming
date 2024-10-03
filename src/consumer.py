@@ -29,19 +29,30 @@ def predict(model: MNISTClassifier, values: dict) -> tuple[float, float]:
   return pred, y
 
 
-def kafka_init(kafka_user: str, kafka_pass: str) -> KafkaConsumer:
-  return KafkaConsumer(
-    cfg.kafka_input_topic,
-    bootstrap_servers=cfg.kafka_bootstrap_servers,
-    security_protocol=cfg.kafka_security_protocol,
-    sasl_mechanism=cfg.kafka_sasl_mechanism,
-    ssl_cafile=cfg.kafka_ssl_cafile,
-    sasl_plain_username=kafka_user,
-    sasl_plain_password=kafka_pass,
-    value_deserializer=lambda m: json.loads(m.decode('ascii')),
-    group_id='consume-to-predict'
+def kafka_init(kafka_user: str, kafka_pass: str) -> tuple[KafkaConsumer, KafkaProducer]:
+  return (
+    KafkaConsumer(
+      cfg.kafka_input_topic,
+      bootstrap_servers=cfg.kafka_bootstrap_servers,
+      security_protocol=cfg.kafka_security_protocol,
+      sasl_mechanism=cfg.kafka_sasl_mechanism,
+      ssl_cafile=cfg.kafka_ssl_cafile,
+      sasl_plain_username=kafka_user,
+      sasl_plain_password=kafka_pass,
+      value_deserializer=lambda m: json.loads(m.decode('ascii')),
+      group_id='consume-to-predict'
+    ),
+    KafkaProducer(
+      bootstrap_servers=cfg.kafka_bootstrap_servers,
+      security_protocol=cfg.kafka_security_protocol,
+      sasl_mechanism=cfg.kafka_sasl_mechanism,
+      ssl_cafile=cfg.kafka_ssl_cafile,
+      sasl_plain_username=kafka_user,
+      sasl_plain_password=kafka_pass,
+      value_serializer=lambda m: json.dumps(m).encode('ascii')
+    )
   )
- 
+
 
 def main(model_path: Annotated[Path, typer.Option()] = Path('data/MNISTClassifier.pt'),
          kafka_user: Annotated[str, typer.Option()] = 'consumer',
@@ -49,14 +60,24 @@ def main(model_path: Annotated[Path, typer.Option()] = Path('data/MNISTClassifie
   
   model = load_model(model_path)
 
-  consumer = kafka_init(kafka_user, kafka_pass)
+  consumer, producer = kafka_init(kafka_user, kafka_pass)
 
   try:
     for msg in consumer:
       pred, gt = predict(model, msg.value)
       
       print(f'pred={pred}, gt={gt}')
+
+      producer.send(
+        topic=cfg.kafka_output_topic,
+        value={
+          'pred': pred,
+          'gt': gt  
+        }
+      )
+      producer.flush()
   finally:
+    producer.close()
     consumer.close()
 
 
