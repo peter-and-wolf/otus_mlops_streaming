@@ -39,7 +39,8 @@ def kafka_init(kafka_user: str, kafka_pass: str) -> KafkaConsumer:
     sasl_plain_username=kafka_user,
     sasl_plain_password=kafka_pass,
     value_deserializer=lambda m: json.loads(m.decode('ascii')),
-    group_id='consume-to-predict'
+    group_id='consume-to-predict',
+    auto_offset_reset='earliest'
   )
  
 

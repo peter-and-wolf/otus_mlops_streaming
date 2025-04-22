@@ -1,7 +1,7 @@
 kafka_bootstrap_servers=[
-  'rc1a-m9eq2fpqvhar1705.mdb.yandexcloud.net:9091',
-  'rc1b-vgn8nra3bkdhhhbv.mdb.yandexcloud.net:9091',
-  'rc1d-kcaf229pa6mjpb8c.mdb.yandexcloud.net:9091'
+  'rc1a-9v8nqvdpqid88ptq.mdb.yandexcloud.net:9091',
+  'rc1b-77otp66h567jsbia.mdb.yandexcloud.net:9091',
+  'rc1d-ebjvsfnkp8m7iqps.mdb.yandexcloud.net:9091'
 ]
 
 kafka_security_protocol='SASL_SSL'
