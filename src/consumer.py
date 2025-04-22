@@ -56,6 +56,7 @@ def kafka_init(kafka_user: str, kafka_pass: str) -> tuple[KafkaConsumer, KafkaPr
 
 
 def main(model_path: Annotated[Path, typer.Option()] = Path('data/MNISTClassifier.pt'),
+         name: Annotated[str, typer.Option()] = 'consumer1',
          kafka_user: Annotated[str, typer.Option()] = 'consumer',
          kafka_pass: Annotated[str, typer.Option()] = 'cat281983') -> None:
   
@@ -72,6 +73,7 @@ def main(model_path: Annotated[Path, typer.Option()] = Path('data/MNISTClassifie
       producer.send(
         topic=cfg.kafka_output_topic,
         value={
+          'user': name,
           'pred': pred,
           'gt': gt
         }
