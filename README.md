@@ -27,7 +27,7 @@ bash run-ksqldb-shell.sh
 1. Создали стрим из топика:
 
 ```bash
-CREATE STREAM predictions (pred DOUBLE, gt DOUBLE) WITH (kafka_topic='predictions', value_format='json', partitions=3);
+CREATE STREAM predictions (user STRING, pred DOUBLE, gt DOUBLE) WITH (kafka_topic='predictions', value_format='json', partitions=3);
 ```
 
 2. Написали простой [push-запрос](https://docs.ksqldb.io/en/latest/developer-guide/ksqldb-reference/select-push-query/) (это такой, который запускается и обрабатывает изменения, пока мы его не прибьем) в стрим:
@@ -42,18 +42,31 @@ SELECT POWER(pred-gt, 2) AS se FROM predictions EMIT CHANGES;
 SELECT AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) EMIT CHANGES;
 ```
 
-4. Добавили в предыдущий запрос границы окна и убедились, что границы верные, просто строчки частят:
+4. И такой же запрос с агрегацией по пользователю:
 
 ```bash
-SELECT FROM_UNIXTIME(WINDOWSTART) AS ws, FROM_UNIXTIME(WINDOWEND) AS we, AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) EMIT CHANGES;
+SELECT user, AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) GROUP BY user EMIT CHANGES;
 ```
 
-5. Поменяли `EMIT CHANGES` на `EMIT FINAL` и получили то, что хотели (агрегацию среднеквадратичной ошибки в 10-секундных окнах):
+5. Добавили в предыдущий запрос границы окна и убедились, что границы верные, просто строчки частят:
 
 ```bash
-SELECT FROM_UNIXTIME(WINDOWSTART) AS ws, FROM_UNIXTIME(WINDOWEND) AS we, AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) EMIT FINAL;
+SELECT FROM_UNIXTIME(WINDOWSTART) AS ws, FROM_UNIXTIME(WINDOWEND) AS we, user, AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) GROUP BY user EMIT CHANGES;
 ```
 
+6. Поменяли `EMIT CHANGES` на `EMIT FINAL` и получили то, что хотели (агрегацию среднеквадратичной ошибки в 10-секундных окнах):
+
+```bash
+SELECT FROM_UNIXTIME(WINDOWSTART) AS ws, FROM_UNIXTIME(WINDOWEND) AS we, user, AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) GROUP BY user EMIT FINAL;
+```
+
+7. И создали таблицу из запроса из стрима
+
+```bash
+CREATE TABLE stats AS SELECT user, AVG(POWER(pred-gt, 2)) AS mse FROM predictions WINDOW TUMBLING(SIZE 10 SECONDS) GROUP BY user EMIT FINAL;
+
+SELECT user, mse FROM stats;
+```
 
 
 
